@@ -30,11 +30,11 @@ setup_variables()
 	STEAMCONFIG=/storage/.xbmc/addons/multimedia.steam
 	STEAMDATALINK="$STEAMCONFIG/$STEAMPACKAGE"
 	STEAMBOOTSTRAP=steam.sh
-	LAUNCHSTEAMDIR="$(readlink -e -q "$STEAMDATALINK")"
+	LAUNCHSTEAMDIR="$STEAMDATALINK"
 	LAUNCHSTEAMPLATFORM="$(detect_platform)"
 	LAUNCHSTEAMBOOTSTRAPFILE="$(dirname "$STEAMSCRIPT")/bootstraplinux_$LAUNCHSTEAMPLATFORM.tar.xz"
 	if [ ! -f "$LAUNCHSTEAMBOOTSTRAPFILE" ]; then
-		LAUNCHSTEAMBOOTSTRAPFILE="/usr/lib/$STEAMPACKAGE/bootstraplinux_$LAUNCHSTEAMPLATFORM.tar.xz"
+		LAUNCHSTEAMBOOTSTRAPFILE="$STEAMCONFIG/usr/lib/$STEAMPACKAGE/bootstraplinux_$LAUNCHSTEAMPLATFORM.tar.xz"
 	fi
 
 	# Get the default data path
@@ -53,11 +53,6 @@ setup_variables()
 			exit 1
 			;;
 	esac
-
-	# Create the config directory if needed
-	if [[ ! -d "$STEAMCONFIG" ]]; then
-		mkdir "$STEAMCONFIG"
-	fi
 }
 
 install_bootstrap()
