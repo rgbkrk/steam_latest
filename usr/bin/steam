@@ -30,7 +30,7 @@ setup_variables()
 	STEAMCONFIG=/storage/.xbmc/addons/multimedia.steam
 	STEAMDATALINK="$STEAMCONFIG/$STEAMPACKAGE"
 	STEAMBOOTSTRAP=steam.sh
-	LAUNCHSTEAMDIR="$STEAMDATALINK"
+	LAUNCHSTEAMDIR="$(readlink -f $STEAMDATALINK)"
 	LAUNCHSTEAMPLATFORM="$(detect_platform)"
 	LAUNCHSTEAMBOOTSTRAPFILE="$(dirname "$STEAMSCRIPT")/bootstraplinux_$LAUNCHSTEAMPLATFORM.tar.xz"
 	if [ ! -f "$LAUNCHSTEAMBOOTSTRAPFILE" ]; then
@@ -41,11 +41,9 @@ setup_variables()
 	STEAM_DATA_HOME="${STEAMCONFIG}/.local/share"
 	case "$STEAMPACKAGE" in
 		steam)
-			CLASSICSTEAMDIR="$HOME/Steam"
 			DEFAULTSTEAMDIR="$STEAM_DATA_HOME/Steam"
 			;;
 		steambeta)
-			CLASSICSTEAMDIR="$HOME/SteamBeta"
 			DEFAULTSTEAMDIR="$STEAM_DATA_HOME/SteamBeta"
 			;;
 		*)
@@ -93,11 +91,6 @@ check_bootstrap()
 	fi
 }
 
-# Don't allow running as root
-if [ "$(id -u)" == "0" ]; then
-	exit 1
-fi
-
 # Look for the Steam data files
 setup_variables
 
@@ -106,9 +99,6 @@ if ! check_bootstrap "$LAUNCHSTEAMDIR"; then
 	if check_bootstrap "$DEFAULTSTEAMDIR"; then
 		echo $"Repairing installation, linking $STEAMDATALINK to $DEFAULTSTEAMDIR"
 		repair_bootstrap "$DEFAULTSTEAMDIR"
-	elif check_bootstrap "$CLASSICSTEAMDIR"; then
-		echo $"Repairing installation, linking $STEAMDATALINK to $CLASSICSTEAMDIR"
-		repair_bootstrap "$CLASSICSTEAMDIR"
 	fi
 fi
 
