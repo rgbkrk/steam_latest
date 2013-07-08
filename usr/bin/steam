@@ -4,7 +4,7 @@
 # It will create the Steam bootstrap if necessary and then launch steam.
 
 # Get the full name of this script
-export STEAMSCRIPT="$(cd "${0%/*}" && echo "$PWD")/${0##*/}"
+export STEAMSCRIPT="/storage/.xbmc/addons/multimedia.steam/usr/bin/steam"
 
 # When this version is incremented a new package will be deployed to:
 #	http://repo.steampowered.com/steam
@@ -17,42 +17,17 @@ export STEAMSCRIPT_VERSION=100039
 # Set up domain for script localization
 export TEXTDOMAIN=steam
 
-function show_message()
-{
-	style=$1
-	shift
-	if ! zenity "$style" --text="$*" 2>/dev/null; then
-		case "$style" in
-		--error)
-			title=$"Error"
-			;;
-		--warning)
-			title=$"Warning"
-			;;
-		*)
-			title=$"Note"
-			;;
-		esac
-
-		# Save the prompt in a temporary file because it can have newlines in it
-		tmpfile="$(mktemp || echo "/tmp/steam_message.txt")"
-		echo -e "$*" >"$tmpfile"
-		xterm -T "$title" -e "cat $tmpfile; echo -n 'Press enter to continue: '; read input"
-		rm -f "$tmpfile"
-	fi
-}
-
-function detect_platform()
+detect_platform()
 {
 	# Maybe be smarter someday
 	# Right now this is the only platform we have a bootstrap for, so hard-code it.
 	echo ubuntu12_32
 }
 
-function setup_variables()
+setup_variables()
 {
 	STEAMPACKAGE="${0##*/}"
-	STEAMCONFIG=~/.steam
+	STEAMCONFIG=/storage/.xbmc/addons/multimedia.steam
 	STEAMDATALINK="$STEAMCONFIG/$STEAMPACKAGE"
 	STEAMBOOTSTRAP=steam.sh
 	LAUNCHSTEAMDIR="$(readlink -e -q "$STEAMDATALINK")"
@@ -63,7 +38,7 @@ function setup_variables()
 	fi
 
 	# Get the default data path
-	STEAM_DATA_HOME="${XDG_DATA_HOME:-$HOME/.local/share}"
+	STEAM_DATA_HOME="${STEAMCONFIG}/.local/share"
 	case "$STEAMPACKAGE" in
 		steam)
 			CLASSICSTEAMDIR="$HOME/Steam"
@@ -85,7 +60,7 @@ function setup_variables()
 	fi
 }
 
-function install_bootstrap()
+install_bootstrap()
 {
 	STEAMDIR="$1"
 
@@ -103,28 +78,17 @@ function install_bootstrap()
 	rm -f "$STEAMDATALINK" && ln -s "$STEAMDIR" "$STEAMDATALINK"
 	setup_variables
 
-	# put the Steam icon on the user's desktop
-	# try to read ~/.config/user-dirs.dirs to get the current desktop configuration
-	# http://www.freedesktop.org/wiki/Software/xdg-user-dirs
-	test -f "${XDG_CONFIG_HOME:-$HOME/.config}/user-dirs.dirs" && source "${XDG_CONFIG_HOME:-$HOME/.config}/user-dirs.dirs"
-	DESKTOP_DIR="${XDG_DESKTOP_DIR:-$HOME/Desktop}"
-
-	if [ -d "$DESKTOP_DIR" ]; then
-		cp "/usr/share/applications/$STEAMPACKAGE.desktop" "$DESKTOP_DIR"
-		chmod +x "$DESKTOP_DIR/$STEAMPACKAGE.desktop"
-	fi
-
 	# Restore the umask
 	umask "$omask"
 }
 
-function repair_bootstrap()
+repair_bootstrap()
 {
 	rm -f "$STEAMDATALINK" && ln -s "$1" "$STEAMDATALINK"
 	setup_variables
 }
 
-function check_bootstrap()
+check_bootstrap()
 {
 	if [[ -n "$1" && -x "$1/$STEAMBOOTSTRAP" ]]; then
 		# Looks good...
@@ -136,7 +100,6 @@ function check_bootstrap()
 
 # Don't allow running as root
 if [ "$(id -u)" == "0" ]; then
-	show_message --error $"Cannot run as root user"
 	exit 1
 fi
 
@@ -158,28 +121,10 @@ if [[ ! -L "$STEAMDATALINK" ]]; then
 	# We don't have the data link and we couldn't find an existing bootstrap, so just install the bootstrap
 	install_bootstrap "$DEFAULTSTEAMDIR"
 elif ! check_bootstrap "$LAUNCHSTEAMDIR"; then
-	# We have the data link but we can't find the data, prompt the user
-	if zenity --question --text=$"Couldn't find Steam content, did you move it?" --ok-label=$"Search" --cancel-label=$"Reinstall"; then
-		while true; do
-			STEAMDIR="`zenity --file-selection --directory`"
-			if [[ -z "$STEAMDIR" ]]; then
-				# User canceled
-				exit 0
-			fi
-			if check_bootstrap "$STEAMDIR"; then
-				repair_bootstrap "$STEAMDIR"
-				break;
-			else
-				show_message --error $"Please pick a valid Steam content directory"
-			fi
-		done
-	else
-		install_bootstrap "$DEFAULTSTEAMDIR"
-	fi
+	install_bootstrap "$DEFAULTSTEAMDIR"
 fi
 
 if ! check_bootstrap "$LAUNCHSTEAMDIR"; then
-	show_message --error $"Couldn't set up Steam data - please contact technical support"
 	exit 1
 fi
 
