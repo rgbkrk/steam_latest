@@ -59,7 +59,6 @@ install_bootstrap()
 
 	# Save the umask and set strong permissions
 	omask="$(umask)"
-	umask 0077
 
 	echo $"Setting up Steam content in $STEAMDIR"
 	mkdir -p "$STEAMDIR"

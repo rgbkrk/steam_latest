@@ -191,7 +191,6 @@ install_bootstrap()
 
 	# Save the umask and set strong permissions
 	omask=`umask`
-	umask 0077
 
 	STEAMBOOTSTRAPARCHIVE=`detect_bootstrap`
 	if [ -f "$STEAMBOOTSTRAPARCHIVE" ]; then
@@ -359,7 +358,7 @@ if [ "$UNAME" == "Linux" ]; then
 	STEAMROOTLINK="$STEAMCONFIG/root" # points at the Steam install path for the currently running Steam
 	STEAMDATALINK="`detect_steamdatalink`" # points at the Steam content path
 	STEAMSTARTING="$STEAMCONFIG/starting"
-
+	
 	# See if this is the initial launch of Steam
 	if [ ! -f "$PIDFILE" ] || ! kill -0 $(cat "$PIDFILE") 2>/dev/null; then
 		INITIAL_LAUNCH=true
@@ -481,7 +480,6 @@ if [ "$UNAME" == "Linux" ]; then
 			export LD_LIBRARY_PATH="$STEAM_RUNTIME/i386/lib/i386-linux-gnu:$STEAM_RUNTIME/i386/lib:$STEAM_RUNTIME/i386/usr/lib/i386-linux-gnu:$STEAM_RUNTIME/i386/usr/lib:$STEAM_RUNTIME/amd64/lib/x86_64-linux-gnu:$STEAM_RUNTIME/amd64/lib:$STEAM_RUNTIME/amd64/usr/lib/x86_64-linux-gnu:$STEAM_RUNTIME/amd64/usr/lib:$LD_LIBRARY_PATH"
 		else
 			echo "Unpack runtime failed, error code $?"
-			show_message --error $"Couldn't set up the Steam Runtime. Are you running low on disk space?\nContinuing..."
 		fi
 	fi
 
