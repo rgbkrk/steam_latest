@@ -20,15 +20,7 @@ STEAMDATA="$STEAMROOT"
 if [ -z $STEAMEXE ]; then
   STEAMEXE=`basename "$0" .sh`
 fi
-# Backward compatibility for server operators
-if [ "$STEAMEXE" = "steamcmd" ]; then
-	echo "***************************************************"
-	echo "The recommended way to run steamcmd is: steamcmd.sh $*"
-	echo "***************************************************"
-	exec "$STEAMROOT/steamcmd.sh" "$@"
-	echo "Couldn't find steamcmd.sh" >&1
-	exit 255
-fi
+
 cd "$STEAMROOT"
 
 # The minimum version of the /usr/bin/steam script that we require
@@ -37,7 +29,6 @@ MINIMUM_STEAMSCRIPT_VERSION=100020
 # Save the system paths in case we need to restore them
 export SYSTEM_PATH="$PATH"
 export SYSTEM_LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
-
 
 show_license_agreement()
 {
@@ -320,7 +311,7 @@ check_shared_libraries()
 		MISSING_LIBRARIES=$(get_missing_libraries "$STEAMROOT/$PLATFORM/$STEAMEXE")
 	fi
 	if [ "$MISSING_LIBRARIES" != "" ]; then
-		show_message --error $"You are missing the following 32-bit libraries, and Steam may not run:\n$MISSING_LIBRARIES"
+		echo "You are missing the following 32-bit libraries, and Steam may not run:\n$MISSING_LIBRARIES"
 	fi
 }
 
