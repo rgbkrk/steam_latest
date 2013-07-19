@@ -221,13 +221,9 @@ download_archive()
 
 extract_archive()
 {
-	if [ "${BF}" ]; then
-		tar --blocking-factor=${BF} --checkpoint=1 --checkpoint-action='exec=echo $TAR_CHECKPOINT' -xf "$2" -C "$3" 
-	else
-		echo "$1"
-		tar -xf "$2" -C "$3"
-		return $?
-	fi
+	echo "$1"
+	tar -xf "$2" -C "$3"
+	return $?
 }
 
 has_runtime_archive()
@@ -340,7 +336,7 @@ if [ "$UNAME" == "Linux" ]; then
 	# We use ~/.steam for bootstrap symlinks so that we can easily
 	# tell partners where to go to find the Steam libraries and data.
 	# This is constant so that legacy applications can always find us in the future.
-	STEAMCONFIG=/storage/.xbmc/addons/multimedia.steam/steam
+	STEAMCONFIG=~/.steam
 	PIDFILE="$STEAMCONFIG/steam.pid" # pid of running steam for this user
 	STEAMBIN32LINK="$STEAMCONFIG/bin32"
 	STEAMBIN64LINK="$STEAMCONFIG/bin64"

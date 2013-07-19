@@ -4,7 +4,7 @@
 # It will create the Steam bootstrap if necessary and then launch steam.
 
 # Get the full name of this script
-export STEAMSCRIPT="/storage/.xbmc/addons/multimedia.steam/usr/bin/steam"
+export STEAMSCRIPT="$(cd "${0%/*}" && echo "$PWD")/${0##*/}"
 
 # When this version is incremented a new package will be deployed to:
 #	http://repo.steampowered.com/steam
@@ -27,18 +27,18 @@ detect_platform()
 setup_variables()
 {
 	STEAMPACKAGE="${0##*/}"
-	STEAMCONFIG=/storage/.xbmc/addons/multimedia.steam
+	STEAMCONFIG=~/.steam
 	STEAMDATALINK="$STEAMCONFIG/$STEAMPACKAGE"
 	STEAMBOOTSTRAP=steam.sh
-	LAUNCHSTEAMDIR="$(readlink -f $STEAMDATALINK)"
+	LAUNCHSTEAMDIR="$(readlink -f "$STEAMDATALINK")"
 	LAUNCHSTEAMPLATFORM="$(detect_platform)"
 	LAUNCHSTEAMBOOTSTRAPFILE="$(dirname "$STEAMSCRIPT")/bootstraplinux_$LAUNCHSTEAMPLATFORM.tar.xz"
 	if [ ! -f "$LAUNCHSTEAMBOOTSTRAPFILE" ]; then
-		LAUNCHSTEAMBOOTSTRAPFILE="$STEAMCONFIG/usr/lib/$STEAMPACKAGE/bootstraplinux_$LAUNCHSTEAMPLATFORM.tar.xz"
+		LAUNCHSTEAMBOOTSTRAPFILE="~/usr/lib/$STEAMPACKAGE/bootstraplinux_$LAUNCHSTEAMPLATFORM.tar.xz"
 	fi
 
 	# Get the default data path
-	STEAM_DATA_HOME="${STEAMCONFIG}/.local/share"
+	STEAM_DATA_HOME="$HOME/.local/share}"
 	case "$STEAMPACKAGE" in
 		steam)
 			DEFAULTSTEAMDIR="$STEAM_DATA_HOME/Steam"
