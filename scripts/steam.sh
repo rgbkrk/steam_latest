@@ -5,7 +5,6 @@ if [ "$STEAM_DEBUG" ]; then
 	set -x
 fi
 export TEXTDOMAIN=steam
-export TEXTDOMAINDIR=/usr/share/locale
 
 ARCHIVE_EXT=tar.xz
 
@@ -20,7 +19,15 @@ STEAMDATA="$STEAMROOT"
 if [ -z $STEAMEXE ]; then
   STEAMEXE=`basename "$0" .sh`
 fi
-
+# Backward compatibility for server operators
+if [ "$STEAMEXE" = "steamcmd" ]; then
+	echo "***************************************************"
+	echo "The recommended way to run steamcmd is: steamcmd.sh $*"
+	echo "***************************************************"
+	exec "$STEAMROOT/steamcmd.sh" "$@"
+	echo "Couldn't find steamcmd.sh" >&1
+	exit 255
+fi
 cd "$STEAMROOT"
 
 # The minimum version of the /usr/bin/steam script that we require
@@ -32,10 +39,16 @@ export SYSTEM_LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
 
 show_license_agreement()
 {
-answer=accepted
-if [ "$answer" != "accepted" ]; then
-	exit 0
-fi
+	LICENSE="$STEAMROOT/steam_install_agreement.txt"
+	if [ ! -f "$STEAMCONFIG/steam_install_agreement.txt" ]; then
+		if [ ! -f "$LICENSE" ]; then
+			exit 1
+		fi
+		answer=accepted
+		if [ "$answer" != "accepted" ]; then
+				exit 0
+		fi
+	fi
 }
 
 distro_description()
@@ -192,9 +205,6 @@ install_bootstrap()
 		STATUS=1
 	fi
 
-	# Restore the umask
-	umask $omask
-
 	return $STATUS
 }
 
@@ -221,9 +231,9 @@ download_archive()
 
 extract_archive()
 {
-	echo "$1"
-	tar -xf "$2" -C "$3"
-	return $?
+		echo "$1"
+		tar -xf "$2" -C "$3"
+		return $?
 }
 
 has_runtime_archive()
@@ -253,7 +263,7 @@ unpack_runtime()
 	fi
 
 	# Make sure we haven't already unpacked them
-	if [ -f "$STEAM_RUNTIME/checksum" ]; then
+	if [ -f "$STEAM_RUNTIME/checksum" ] && cmp "$STEAM_RUNTIME.checksum" "$STEAM_RUNTIME/checksum" >/dev/null; then
 		return 0
 	fi
 
@@ -306,14 +316,60 @@ check_shared_libraries()
 	else
 		MISSING_LIBRARIES=$(get_missing_libraries "$STEAMROOT/$PLATFORM/$STEAMEXE")
 	fi
-	if [ "$MISSING_LIBRARIES" != "" ]; then
-		echo "You are missing the following 32-bit libraries, and Steam may not run:\n$MISSING_LIBRARIES"
-	fi
 }
 
 ignore_signal()
 {
 	:
+}
+
+reset_steam()
+{
+	# Don't wipe development files
+	if [ -f "$STEAMROOT/steam_dev.cfg" ]; then
+		echo "Can't reset development directory"
+		return
+	fi
+
+	if [ -z "$INITIAL_LAUNCH" ]; then
+		exit 1
+	fi
+
+	if [ ! -f "$(detect_bootstrap)" ]; then
+		exit 2
+	fi
+
+	STEAM_SAVE="$STEAMROOT/.save"
+
+	# Don't let the user interrupt us, or they may corrupt the install
+	trap ignore_signal INT
+
+	# Back up games and critical files
+	mkdir -p "$STEAM_SAVE"
+	for i in bootstrap.tar.xz ssfn* SteamApps userdata; do
+		if [ -e "$i" ]; then
+			mv -f "$i" "$STEAM_SAVE/"
+		fi
+	done
+	for i in "$STEAMCONFIG/registry.vdf"; do
+		mv -f "$i" "$i.bak"
+	done
+
+	# Scary!
+	rm -rf "$STEAMROOT/"*
+
+	# Move things back into place
+	mv -f "$STEAM_SAVE/"* "$STEAMROOT/"
+	rmdir "$STEAM_SAVE"
+
+	# Okay, at this point we can recover, so re-enable interrupts
+	trap '' INT
+
+	# Reinstall the bootstrap and we're done.
+	install_bootstrap
+
+	echo $"Reset complete!"
+	exit
 }
 
 #determine platform
@@ -345,17 +401,29 @@ if [ "$UNAME" == "Linux" ]; then
 	STEAMROOTLINK="$STEAMCONFIG/root" # points at the Steam install path for the currently running Steam
 	STEAMDATALINK="`detect_steamdatalink`" # points at the Steam content path
 	STEAMSTARTING="$STEAMCONFIG/starting"
-	
+
 	# See if this is the initial launch of Steam
 	if [ ! -f "$PIDFILE" ] || ! kill -0 $(cat "$PIDFILE") 2>/dev/null; then
 		INITIAL_LAUNCH=true
 	fi
 
+	if [ "$1" = "--reset" ]; then
+		reset_steam
+	fi
+
 	if [ "$INITIAL_LAUNCH" ]; then
+		# Show the license agreement, if needed
+		show_license_agreement
 
 		# See if we need to update the /usr/bin/steam script
 		if [ -z "$STEAMSCRIPT" ]; then
 			STEAMSCRIPT="/usr/bin/`detect_package`"
+		fi
+		if [ -f "$STEAMSCRIPT" ]; then
+			if ! check_scriptversion "$STEAMSCRIPT" STEAMSCRIPT_VERSION "$MINIMUM_STEAMSCRIPT_VERSION"; then
+				STEAMSCRIPT_OUTOFDATE=1
+				warn_outofdate
+			fi
 		fi
 
 		# Install any additional dependencies
@@ -384,7 +452,7 @@ if [ "$UNAME" == "Linux" ]; then
 		rm -f ~/.steampid && ln -s "$PIDFILE" ~/.steampid
 		rm -f ~/.steam/bin && ln -s "$STEAMBIN32LINK" ~/.steam/bin
 		# Uncomment this line when you want to remove the bandaid
-		rm -f ~/.steampath ~/.steampid ~/.steam/bin
+		#rm -f ~/.steampath ~/.steampid ~/.steam/bin
 	fi
 
 	# Show what we detect for distribution and release
@@ -477,7 +545,7 @@ if [ "$UNAME" == "Linux" ]; then
 	check_shared_libraries
 
 	# disable SDL1.2 DGA mouse because we can't easily support it in the overlay
-	export SDL_VIDEO_X11_DGAMOUSE=0 
+	export SDL_VIDEO_X11_DGAMOUSE=0  
 fi
 
 ulimit -n 2048 2>/dev/null
@@ -502,7 +570,7 @@ if [ "$STEAM_DEBUGGER" == "gdb" ] || [ "$STEAM_DEBUGGER" == "cgdb" ]; then
 		unset LD_PRELOAD
 	fi
 
-	$STEAM_DEBUGGER -x "$ARGSFILE" "$STEAMROOT/$PLATFORM/$STEAMEXE" "$@"
+	$STEAM_DEBUGGER -x "$ARGSFILE" --args "$STEAMROOT/$PLATFORM/$STEAMEXE" "$@"
 	rm "$ARGSFILE"
 elif [ "$STEAM_DEBUGGER" == "valgrind" ]; then
 	DONT_BREAK_ON_ASSERT=1 G_SLICE=always-malloc G_DEBUG=gc-friendly valgrind --error-limit=no --undef-value-errors=no --suppressions=$PLATFORM/steam.supp $STEAM_VALGRIND "$STEAMROOT/$PLATFORM/$STEAMEXE" "$@" 2>&1 | tee steam_valgrind.txt
@@ -531,10 +599,5 @@ if [ "$UNAME" = "Linux" ]; then
 fi
 
 if [ $STATUS -eq $MAGIC_RESTART_EXITCODE ]; then
-	# are we running running from a bundle on osx?
-	if [ $PLATFORM == "osx32" -a -f Info.plist ]; then
-		exec open "$STEAMROOT/../.."
-	else
 		exec "$0" "$@"
-	fi
 fi

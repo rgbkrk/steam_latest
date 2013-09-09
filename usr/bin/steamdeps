@@ -46,6 +46,28 @@ def getFullPackageName( name ):
 	else:
 		return name
 
+#
+# Check to see if another package Provides this package
+# N.B. Version checks are not supported on virtual packages
+#
+def isProvided(pkgname):
+	try:
+		process = subprocess.Popen( ['apt-cache', 'showpkg', pkgname], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+		pattern = re.compile( r'^Reverse Provides\:')
+		providers = {}
+		for line in process.stdout:
+			if re.match(pattern,line):
+				for provider in process.stdout:
+					(name, version) = provider.split()
+					providers[name] = version
+				for provider in providers.keys():
+					if hasPackage(provider):
+						return True
+				return False
+	except:
+		return False
+	return False
+
 
 ###
 class Package:
@@ -60,9 +82,11 @@ class Package:
 	def setInstalled(self, version):
 		self.installed = version
 
+
 	def isAvailable(self):
 		if ( self.installed is None ):
-			return False
+			# check to see if another package is providing this virtual package
+			return isProvided(self.name)
 
 		for (op, version) in self.versionConditions:
 			if ( subprocess.call( ['dpkg', '--compare-versions', self.installed, op, version] ) != 0 ):
@@ -91,29 +115,23 @@ def hasPackage( package ):
 	return False
 
 
-###
-substitutions = {
-	# Ubuntu 12.04.2 introduced a new X stack which requires two different
-	# sets of incompatible glx packages depending on which X is currently
-	# installed.
-	#
-	# This is fixed in the latest updates, but we don't know if the user has
-	# the updates so we'd better keep this logic in here.
-	#
-	"libgl1-mesa-glx:i386" : {
-		"condition": lambda: hasPackage( "xserver-xorg-core-lts-quantal" ),
-		"replacement": "libgl1-mesa-glx-lts-quantal:i386"
-	},
-	"libgl1-mesa-dri:i386" : {
-		"condition": lambda: hasPackage( "xserver-xorg-core-lts-quantal" ),
-		"replacement": "libgl1-mesa-dri-lts-quantal:i386"
-	},
-}
-
 def remapPackage( description ):
-	entry = substitutions.get( description )
-	if ( entry is not None and entry["condition"]() ):
-		return entry["replacement"]
+
+	# Ubuntu 12.04.2 and 12.04.3 both introduce new X stacks which require 
+	# two different sets of incompatible glx packages depending on which X 
+	# is currently installed.
+
+	if hasPackage( "xserver-xorg-core-lts-quantal" ):
+		if description == "libgl1-mesa-glx:i386":
+			return "libgl1-mesa-glx-lts-quantal:i386"
+		elif description == "libgl1-mesa-dri:i386":
+			return "libgl1-mesa-dri-lts-quantal:i386"
+
+	elif hasPackage( "xserver-xorg-core-lts-raring" ):
+		if description == "libgl1-mesa-glx:i386":
+			return "libgl1-mesa-glx-lts-raring:i386"
+		elif description == "libgl1-mesa-dri:i386":
+			return "libgl1-mesa-dri-lts-raring:i386"
 
 	return description
 
