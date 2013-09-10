@@ -39,16 +39,10 @@ export SYSTEM_LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
 
 show_license_agreement()
 {
-	LICENSE="$STEAMROOT/steam_install_agreement.txt"
-	if [ ! -f "$STEAMCONFIG/steam_install_agreement.txt" ]; then
-		if [ ! -f "$LICENSE" ]; then
-			exit 1
-		fi
-		answer=accepted
-		if [ "$answer" != "accepted" ]; then
-				exit 0
-		fi
-	fi
+answer=accepted
+if [ "$answer" != "accepted" ]; then
+		exit 0
+fi
 }
 
 distro_description()

@@ -34,7 +34,7 @@ setup_variables()
 	LAUNCHSTEAMPLATFORM="$(detect_platform)"
 	LAUNCHSTEAMBOOTSTRAPFILE="$(dirname "$STEAMSCRIPT")/bootstraplinux_$LAUNCHSTEAMPLATFORM.tar.xz"
 	if [ ! -f "$LAUNCHSTEAMBOOTSTRAPFILE" ]; then
-		LAUNCHSTEAMBOOTSTRAPFILE="/usr/lib/$STEAMPACKAGE/bootstraplinux_$LAUNCHSTEAMPLATFORM.tar.xz"
+		LAUNCHSTEAMBOOTSTRAPFILE="~/usr/lib/steam/bootstraplinux_$LAUNCHSTEAMPLATFORM.tar.xz"
 	fi
 
 	# Get the default data path
