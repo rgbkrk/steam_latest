@@ -257,7 +257,7 @@ unpack_runtime()
 	fi
 
 	# Make sure we haven't already unpacked them
-	if [ -f "$STEAM_RUNTIME/checksum" ] && cmp "$STEAM_RUNTIME.checksum" "$STEAM_RUNTIME/checksum" >/dev/null; then
+	if [ -f "$STEAM_RUNTIME/checksum" ]; then
 		return 0
 	fi
 
@@ -446,7 +446,7 @@ if [ "$UNAME" == "Linux" ]; then
 		rm -f ~/.steampid && ln -s "$PIDFILE" ~/.steampid
 		rm -f ~/.steam/bin && ln -s "$STEAMBIN32LINK" ~/.steam/bin
 		# Uncomment this line when you want to remove the bandaid
-		#rm -f ~/.steampath ~/.steampid ~/.steam/bin
+		rm -f ~/.steampath ~/.steampid ~/.steam/bin
 	fi
 
 	# Show what we detect for distribution and release
