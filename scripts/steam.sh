@@ -6,6 +6,8 @@ if [ "$STEAM_DEBUG" ]; then
 fi
 export TEXTDOMAIN=steam
 
+export HOME=${HOME}
+
 ARCHIVE_EXT=tar.xz
 
 # figure out the absolute path to the script being run a bit
@@ -186,9 +188,6 @@ install_bootstrap()
 	fi
 
 	STATUS=0
-
-	# Save the umask and set strong permissions
-	omask=`umask`
 
 	STEAMBOOTSTRAPARCHIVE=`detect_bootstrap`
 	if [ -f "$STEAMBOOTSTRAPARCHIVE" ]; then

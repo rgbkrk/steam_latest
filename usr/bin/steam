@@ -17,6 +17,8 @@ export STEAMSCRIPT_VERSION=100041
 # Set up domain for script localization
 export TEXTDOMAIN=steam
 
+export HOME=${HOME}
+
 detect_platform()
 {
 	# Maybe be smarter someday
@@ -34,7 +36,7 @@ setup_variables()
 	LAUNCHSTEAMPLATFORM="$(detect_platform)"
 	LAUNCHSTEAMBOOTSTRAPFILE="$(dirname "$STEAMSCRIPT")/bootstraplinux_$LAUNCHSTEAMPLATFORM.tar.xz"
 	if [ ! -f "$LAUNCHSTEAMBOOTSTRAPFILE" ]; then
-		LAUNCHSTEAMBOOTSTRAPFILE="~/usr/lib/steam/bootstraplinux_$LAUNCHSTEAMPLATFORM.tar.xz"
+		LAUNCHSTEAMBOOTSTRAPFILE=~/usr/lib/steam/bootstraplinux_$LAUNCHSTEAMPLATFORM.tar.xz
 	fi
 
 	# Get the default data path
@@ -61,9 +63,6 @@ setup_variables()
 install_bootstrap()
 {
 	STEAMDIR="$1"
-
-	# Save the umask and set strong permissions
-	omask="$(umask)"
 
 	echo $"Setting up Steam content in $STEAMDIR"
 	mkdir -p "$STEAMDIR"
