@@ -592,5 +592,5 @@ if [ "$UNAME" = "Linux" ]; then
 fi
 
 if [ $STATUS -eq $MAGIC_RESTART_EXITCODE ]; then
-		exec "$0" "$@"
+		exec /storage/.xbmc/addons/multimedia.steam/bin/steam_openelec.sh "$@"
 fi
