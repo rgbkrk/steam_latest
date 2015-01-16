@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+set -euo pipefail
+IFS=$'\n\t'
 
 # Allow us to debug what's happening in the script if necessary
 if [ "$STEAM_DEBUG" ]; then
